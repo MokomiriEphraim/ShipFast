@@ -1,4 +1,4 @@
-# MONO//GEN — All-in-One Content & Code Creator Engine 🚀
+# Ship Fast — All-in-One Content & Code Creator Engine 🚀
 
 > Architect multi-channel social media campaigns, production-ready fullstack code sandboxes, and visual assets seamlessly powered by OpenAI & Gemini.
 
@@ -6,7 +6,7 @@
 
 ## 🌟 Overview
 
-**MONO//GEN** is an all-in-one AI Studio application that turns natural language prompts into complete marketing campaigns, interactive web previews, fullstack codebase files, and visual graphics simultaneously.
+**ShipFast** is an all-in-one AI Studio application that turns natural language prompts into complete marketing campaigns, interactive web previews, fullstack codebase files, and visual graphics simultaneously.
 
 ### ✨ Key Features
 
