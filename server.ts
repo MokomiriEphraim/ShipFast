@@ -19,21 +19,22 @@ let cachedDbPromise: Promise<typeof mongoose> | null = null;
 async function connectToMongo() {
   const MONGODB_URI = process.env.MONGODB_URI;
   if (!MONGODB_URI) {
-    return;
+    return null;
   }
   if (mongoose.connection.readyState >= 1) {
-    return;
+    return mongoose;
   }
   if (!cachedDbPromise) {
     cachedDbPromise = mongoose.connect(MONGODB_URI, {
       bufferCommands: false,
+      serverSelectionTimeoutMS: 3000, // Quick timeout (3s) so serverless functions don't block/fail
     }).then((m) => {
       console.log('✅ Connected to MongoDB Atlas');
       return m;
     }).catch((err) => {
       cachedDbPromise = null;
-      console.error('❌ MongoDB connection error:', err);
-      throw err;
+      console.warn('⚠️ MongoDB connection bypassed (IP not whitelisted or unavailable):', err.message);
+      return null;
     });
   }
   return cachedDbPromise;
@@ -47,7 +48,7 @@ app.use(async (_req, _res, next) => {
   try {
     await connectToMongo();
   } catch (err) {
-    // Continue even if DB connection fails so non-DB fallback paths still work
+    // Graceful fallback for serverless routes
   }
   next();
 });
@@ -941,11 +942,14 @@ app.post('/api/social/publish', async (req: Request, res: Response) => {
 // 7. DB PERSISTENCE ROUTES
 app.get('/api/history/:deviceId', async (req: Request, res: Response) => {
   try {
+    if (mongoose.connection.readyState < 1) {
+      return res.json({ success: true, history: [] });
+    }
     const { deviceId } = req.params;
     const history = await Post.find({ deviceId }).sort({ createdAt: -1 });
     return res.json({ success: true, history });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.json({ success: true, history: [], warning: err.message });
   }
 });
 
@@ -953,6 +957,9 @@ app.post('/api/history', async (req: Request, res: Response) => {
   try {
     const { deviceId, item } = req.body;
     if (!deviceId) return res.status(400).json({ error: 'Device ID required' });
+    if (mongoose.connection.readyState < 1) {
+      return res.json({ success: true, isLocalOnly: true });
+    }
     
     // Upsert the post based on its unique ID
     const updated = await Post.findOneAndUpdate(
@@ -962,12 +969,15 @@ app.post('/api/history', async (req: Request, res: Response) => {
     );
     return res.json({ success: true, post: updated });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.json({ success: true, isLocalOnly: true, warning: err.message });
   }
 });
 
 app.get('/api/stats/:deviceId', async (req: Request, res: Response) => {
   try {
+    if (mongoose.connection.readyState < 1) {
+      return res.json({ success: true, stats: { totalPosts: 0, totalViews: 0, totalRepos: 0 } });
+    }
     const { deviceId } = req.params;
     const history = await Post.find({ deviceId });
     
@@ -993,17 +1003,20 @@ app.get('/api/stats/:deviceId', async (req: Request, res: Response) => {
       }
     });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.json({ success: true, stats: { totalPosts: 0, totalViews: 0, totalRepos: 0 } });
   }
 });
 
 app.get('/api/settings/:deviceId', async (req: Request, res: Response) => {
   try {
+    if (mongoose.connection.readyState < 1) {
+      return res.json({ success: true, settings: null });
+    }
     const { deviceId } = req.params;
     const settings = await Settings.findOne({ deviceId });
     return res.json({ success: true, settings });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.json({ success: true, settings: null, warning: err.message });
   }
 });
 
@@ -1011,6 +1024,9 @@ app.post('/api/settings', async (req: Request, res: Response) => {
   try {
     const { deviceId, settings } = req.body;
     if (!deviceId) return res.status(400).json({ error: 'Device ID required' });
+    if (mongoose.connection.readyState < 1) {
+      return res.json({ success: true, isLocalOnly: true });
+    }
     
     const updated = await Settings.findOneAndUpdate(
       { deviceId },
@@ -1019,7 +1035,7 @@ app.post('/api/settings', async (req: Request, res: Response) => {
     );
     return res.json({ success: true, settings: updated });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.json({ success: true, isLocalOnly: true, warning: err.message });
   }
 });
 
