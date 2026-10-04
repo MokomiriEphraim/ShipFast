@@ -88,4 +88,4 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## 📜 License
 
-MIT License © 2026 MONO//GEN
+MIT License © 2026 Ship Fast
