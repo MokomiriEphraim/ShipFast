@@ -1,0 +1,6 @@
+{
+  "name": "Content & Code Creator",
+  "description": "Create code, write social media posts, generate images, push directly to GitHub, and post to LinkedIn, X, Instagram, TikTok, and Facebook.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
